@@ -3,7 +3,13 @@ import { ImageGallery } from './ImageGallery/ImageGallery';
 import { Button } from './Button/Button';
 import { Modal } from './Modal/Modal';
 import style from './App.module.css';
-import { createContext, useContext, useEffect, useState } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useState,
+} from 'react';
 import { getImagesByTag } from '../service/pixabay/getImages';
 import { Loader } from './Loader/Loader';
 
@@ -23,33 +29,35 @@ export const App = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const startSearch = async () => {
-      try {
-        const { hits, total } = await getImagesByTag(
-          searchWord,
-          page,
-          per_page
-        );
-        setImageList(prevImageList => [...prevImageList, ...hits]);
-        setTotal(total);
-      } catch (e) {
-        setError(e.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (loading) {
-      startSearch();
+    setLoading();
+    if (searchWord !== '') {
+      (async () => {
+        try {
+          const { hits, total } = await getImagesByTag(
+            searchWord,
+            page,
+            per_page
+          );
+          setImageList(prevImageList => [...prevImageList, ...hits]);
+          setTotal(total);
+        } catch (e) {
+          setError(e.message);
+        } finally {
+          setLoading(false);
+        }
+      })();
     }
-    if (!loading) {
+    return scrollToEnd();
+  }, [page, per_page, searchWord]);
+
+  useLayoutEffect(() => {
+    if (imageList.length > 0) {
       scrollToEnd();
     }
-  }, [loading, imageList, page, per_page, searchWord]);
+  }, [imageList]);
 
   const addPage = () => {
     setPage(page + 1);
-    setLoading(true);
   };
 
   const addSearchWord = searchWord => {
